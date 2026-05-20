@@ -16,6 +16,7 @@ import {
   BadgerDocExtractionsResponse,
   BadgerDocExtractionPagesResponse,
   BadgerDocUploadResponse,
+  PageSource,
   Tag,
 } from './types'
 import { User } from '@/shared/types'
@@ -36,6 +37,7 @@ const ENDPOINTS = {
   documents: '/documents/',
   document: (id: string | number) => `/document/${id}/`,
   documentPages: (id: string | number) => `/document/${id}/dzi/`,
+  documentRenditions: (id: string | number) => `/document/${id}/renditions/`,
   documentUpload: '/document/',
   extractions: '/extractions/',
   tags: '/tags',
@@ -135,9 +137,46 @@ export const badgerDocService = {
     return response.data
   },
 
-  async getDocumentPages(documentId: string | number): Promise<string[]> {
-    const response = await badgerDocClient.get<string[]>(ENDPOINTS.documentPages(documentId))
-    return response.data
+  /**
+   * Get page sources for the viewer.
+   *
+   * Primary: DZI tile sources from `/document/{id}/dzi/`.
+   * Fallback: when no DZI assets exist, returns PNG renditions from
+   * `/document/{id}/renditions/` tagged as `{ type: 'image' }`, sorted by
+   * `metadata.page`. The viewer renders these read-only via OpenSeadragon's
+   * simple image source.
+   * 
+   *  @param documentId - The document ID
+   */
+  async getDocumentPages(documentId: string | number): Promise<PageSource[]> {
+    let dziUrls: string[] = []
+    try {
+      const response = await badgerDocClient.get<string[]>(ENDPOINTS.documentPages(documentId))
+      dziUrls = response.data ?? []
+    } catch (error) {
+      logger.warn('[BadgerDoc] Failed to fetch DZI page list, will try PNG fallback', error)
+    }
+
+    if (dziUrls.length > 0) {
+      return dziUrls.map((url) => ({ type: 'dzi', url }))
+    }
+
+    const renditions = await this.getDocumentRenditions(documentId)
+    return renditions
+      .filter((doc) => Boolean(doc.file))
+      .sort((a, b) => {
+        const pageA = (a.metadata?.page as number | undefined) ?? 0
+        const pageB = (b.metadata?.page as number | undefined) ?? 0
+        return pageA - pageB
+      })
+      .map((doc) => ({ type: 'image', url: doc.file }))
+  },
+
+  async getDocumentRenditions(documentId: string | number): Promise<BadgerDocDocument[]> {
+    const response = await badgerDocClient.get<BadgerDocDocument[]>(
+      ENDPOINTS.documentRenditions(documentId)
+    )
+    return response.data ?? []
   },
 
   /**

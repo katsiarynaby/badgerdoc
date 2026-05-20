@@ -8,6 +8,7 @@ import type { DocumentsAdapter, DocumentsListParams, DocumentsListResponse } fro
 import type { Document } from '@/shared/types/api'
 import { apiClient } from '../../client'
 import { badgerDocService, transformBadgerDocDocument } from '../../badgerdoc'
+import type { PageSource } from '../../badgerdoc/types'
 
 export const realDocumentsAdapter: DocumentsAdapter = {
   list: async (params?: DocumentsListParams): Promise<DocumentsListResponse> => {
@@ -29,7 +30,7 @@ export const realDocumentsAdapter: DocumentsAdapter = {
     return transformBadgerDocDocument(bdDoc)
   },
 
-  getPagesById: (id: string): Promise<string[]> => badgerDocService.getDocumentPages(id),
+  getPagesById: (id: string): Promise<PageSource[]> => badgerDocService.getDocumentPages(id),
 
   approve: async (id: string): Promise<Document> => {
     const response = await apiClient.post<Document>(`/documents/${id}/approve`)

@@ -17,7 +17,7 @@ import type {
   UpdateTaskRequest,
 } from '@/shared/types/tasks'
 import { BadgerDocExtractionPage } from '@/shared/api/badgerdoc'
-import { BadgerDocExtraction, Tag } from '@/shared/api/badgerdoc/types'
+import { BadgerDocExtraction, PageSource, Tag } from '@/shared/api/badgerdoc/types'
 
 // =============================================================================
 // Response Types
@@ -118,7 +118,7 @@ export interface DocumentsAdapter {
   list(params?: DocumentsListParams): Promise<DocumentsListResponse>
   getById(id: string): Promise<Document>
   updateById(id: string, tags: string[], metadata: string): Promise<Document>
-  getPagesById(id: string): Promise<string[]>
+  getPagesById(id: string): Promise<PageSource[]>
   approve(id: string): Promise<Document>
   decline(id: string, reason?: string): Promise<Document>
 }
