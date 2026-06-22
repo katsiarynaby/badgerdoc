@@ -234,6 +234,20 @@ export function useExtractionState({ extractionPages, activeTag }: UseExtraction
         next.set(page, html)
       }
 
+      for (const page of [...next.keys()]) {
+        const currentHtml = currentPages.get(page)
+        const baselineHtml = baseline.get(page)
+
+        if (currentHtml !== undefined && currentHtml === baselineHtml) {
+          next.delete(page)
+          continue
+        }
+
+        if (currentHtml === undefined && !baseline.has(page)) {
+          next.delete(page)
+        }
+      }
+
       return next.size > 0 ? next : null
     })
   }, [])
